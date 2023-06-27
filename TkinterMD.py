@@ -14,6 +14,7 @@ class Game:
         self.font = font
         self.refresh_speed = refresh_speed
         self.new_game()
+        self.speed = 1000 / self.refresh_speed
         if saving:
             try:
                 with open("save.json", mode="r") as f:
@@ -46,6 +47,7 @@ class Game:
         self.tab_control.add(self.MD_tab, text='Измерения Материи')
         self.tab_control.add(self.stat_tab, text='Статистика')
         self.d_grid = ttk.Frame(master=self.MD_tab, relief="solid", borderwidth=1, width=10, height=350)
+        self.btn_grid = ttk.Frame(master=self.MD_tab, width=10, height=350)
         # Статистика
         self.MD1_count = Label(self.stat_tab, text=f"Куплено 1-х измерений: {self.MD1_bought}")
         self.MD2_count = Label(self.stat_tab, text=f"Куплено 2-х измерений: {self.MD2_bought}")
@@ -81,12 +83,16 @@ class Game:
                              background="light blue", anchor="w", padx=20, height=2, width=34)
         self.md4_btn = Button(self.d_grid, command=self.md4_btn_click,
                               text=f"Купить 4-е измерение!\nЦена: {int(self.MD1_price)} м.", height=2)
-        self.max_btn = Button(self.MD_tab, command=self.max,
+        self.max_btn = Button(self.btn_grid, command=self.max,
                               text="Купить всё", height=2, width=20)
+        self.crunch_btn = Button(self.btn_grid, command=self.crunch,
+                                 text="Сжатие измерений", height=2, width=20)
 
         self.d_grid.pack(anchor="n", fill='both', padx=10, pady=10)
-        self.max_btn.pack(anchor="nw", padx=10)
-        self.md1_txt.grid(row=0, column=0, padx=5, pady=5, columnspan=2)
+        self.btn_grid.pack(anchor="n", fill='both', padx=10, pady=10)
+        self.max_btn.grid(row=0, column=0, padx=5, pady=5)
+        self.crunch_btn.grid(row=0, column=3, padx=160, pady=5)
+        self.md1_txt.grid(row=0, column=0, padx=5, pady=5, columnspan=2, sticky="ew")
         self.md1_btn.grid(row=0, column=2, padx=5, pady=5)
         self.md2_txt.grid(row=1, column=0, padx=5, pady=5, columnspan=2)
         self.md2_btn.grid(row=1, column=2, padx=5, pady=5)
@@ -139,36 +145,48 @@ class Game:
         while self.Matter >= self.MD4_price:
             self.md4_btn_click()
 
+    def crunch(self):
+        if self.MD4 >= int(round(self.MCrunch_cost)):
+            self.MCrunch += 1
+            self.MCrunch_cost *= 1.25
+            self.Matter = 10
+            self.MD1 = 0
+            self.MD2 = 0
+            self.MD3 = 0
+            self.MD4 = 0
+            self.MD1_bought = 0
+            self.MD2_bought = 0
+            self.MD3_bought = 0
+            self.MD4_bought = 0
+            self.MD1_mult = 1
+            self.MD2_mult = 1
+            self.MD3_mult = 1
+            self.MD4_mult = 1
+            self.MD1_price = 10
+            self.MD2_price = 100
+            self.MD3_price = 10_000
+            self.MD4_price = 1_000_000
+
     def main_loop(self):
         self.calculations()
         self.UI_refresh()
         self.window.after(self.refresh_speed, self.main_loop)
 
     def UI_refresh(self):
-        if self.MD1_price > self.Matter:
-            self.md1_btn["state"] = "disabled"
-        else:
-            self.md1_btn["state"] = "active"
-
-        if self.MD2_price > self.Matter:
-            self.md2_btn["state"] = "disabled"
-        else:
-            self.md2_btn["state"] = "active"
-
-        if self.MD3_price > self.Matter:
-            self.md3_btn["state"] = "disabled"
-        else:
-            self.md3_btn["state"] = "active"
-
-        if self.MD4_price > self.Matter:
-            self.md4_btn["state"] = "disabled"
-        else:
-            self.md4_btn["state"] = "active"
+        self.md1_btn["state"] = "disabled" if self.MD1_price > self.Matter else "active"
+        self.md2_btn["state"] = "disabled" if self.MD2_price > self.Matter else "active"
+        self.md3_btn["state"] = "disabled" if self.MD3_price > self.Matter else "active"
+        self.md4_btn["state"] = "disabled" if self.MD4_price > self.Matter else "active"
+        self.crunch_btn["state"] = "disabled" if int(round(self.MCrunch_cost)) > self.MD4 else "active"
         self.m_txt["text"] = f"У Вас: {num_notation(round(self.Matter, 1))} ед. Материи"
-        self.md1_txt["text"] = f"1-е Измерение Материи: {num_notation(int(self.MD1))}\nМножитель: x{self.MD1_mult}"
-        self.md2_txt["text"] = f"2-е Измерение Материи: {num_notation(int(self.MD2))}\nМножитель: x{self.MD2_mult}"
-        self.md3_txt["text"] = f"3-е Измерение Материи: {num_notation(int(self.MD3))}\nМножитель: x{self.MD3_mult}"
-        self.md4_txt["text"] = f"4-е Измерение Материи: {num_notation(int(self.MD4))}\nМножитель: x{self.MD4_mult}"
+        self.md1_txt["text"] = f"1-е Измерение Материи: {num_notation(int(self.MD1))}" \
+                               f"\nМножитель: x{num_notation(self.MD1_mult * (2 ** self.MCrunch))}"
+        self.md2_txt["text"] = f"2-е Измерение Материи: {num_notation(int(self.MD2))}" \
+                               f"\nМножитель: x{num_notation(self.MD2_mult * (2 ** self.MCrunch))}"
+        self.md3_txt["text"] = f"3-е Измерение Материи: {num_notation(int(self.MD3))}" \
+                               f"\nМножитель: x{num_notation(self.MD3_mult * (2 ** self.MCrunch))}"
+        self.md4_txt["text"] = f"4-е Измерение Материи: {num_notation(int(self.MD4))}" \
+                               f"\nМножитель: x{num_notation(self.MD4_mult * (2 ** self.MCrunch))}"
         self.md1_btn["text"] = f"Купить 1-е измерение!\nЦена: {num_notation(int(self.MD1_price))} м."
         self.md2_btn["text"] = f"Купить 2-е измерение!\nЦена: {num_notation(int(self.MD2_price))} м."
         self.md3_btn["text"] = f"Купить 3-е измерение!\nЦена: {num_notation(int(self.MD3_price))} м."
@@ -177,20 +195,22 @@ class Game:
         self.MD2_count["text"] = f"Куплено 2-х измерений: {self.MD2_bought}"
         self.MD3_count["text"] = f"Куплено 3-х измерений: {self.MD3_bought}"
         self.MD4_count["text"] = f"Куплено 4-х измерений: {self.MD4_bought}"
+        self.crunch_btn["text"] = f"Сжатие измерений: {self.MCrunch}" \
+                                  f"\nЦена: {num_notation(int(round(self.MCrunch_cost)))} 4-х ИМ"
 
     def calculations(self):
-        speed = 1000 / self.refresh_speed
-        self.Matter += (self.MD1 * self.MD1_mult) / speed
-        self.MD1 += (self.MD2 * self.MD2_mult) / speed
-        self.MD2 += (self.MD3 * self.MD3_mult) / speed
-        self.MD3 += (self.MD4 * self.MD4_mult) / speed
+        self.Matter += (self.MD1 * self.MD1_mult * (2 ** self.MCrunch)) / self.speed
+        self.MD1 += (self.MD2 * self.MD2_mult * (2 ** self.MCrunch)) / self.speed
+        self.MD2 += (self.MD3 * self.MD3_mult * (2 ** self.MCrunch)) / self.speed
+        self.MD3 += (self.MD4 * self.MD4_mult * (2 ** self.MCrunch)) / self.speed
 
     def save(self):
         save = {"Matter": self.Matter, "MD1": self.MD1, "MD2": self.MD2, "MD3": self.MD3, "MD4": self.MD4,
                 "MD1_bought": self.MD1_bought, "MD2_bought": self.MD2_bought, "MD3_bought": self.MD3_bought,
                 "MD4_bought": self.MD4_bought, "MD1_mult": self.MD1_mult, "MD2_mult": self.MD2_mult,
                 "MD3_mult": self.MD3_mult, "MD4_mult": self.MD4_mult, "MD1_price": self.MD1_price,
-                "MD2_price": self.MD2_price, "MD3_price": self.MD3_price, "MD4_price": self.MD4_price}
+                "MD2_price": self.MD2_price, "MD3_price": self.MD3_price, "MD4_price": self.MD4_price,
+                "MCrunch": self.MCrunch, "MCrunch_cost": self.MCrunch_cost}
         with open("save.json", mode="w") as f:
             f.write(json.dumps(save, indent=2))
 
@@ -226,6 +246,8 @@ class Game:
         self.MD2_price = data["MD2_price"]
         self.MD3_price = data["MD3_price"]
         self.MD4_price = data["MD4_price"]
+        self.MCrunch = data["MCrunch"]
+        self.MCrunch_cost = data["MCrunch_cost"]
 
     def new_game(self):
         self.Matter = 10
@@ -245,6 +267,8 @@ class Game:
         self.MD2_price = 100
         self.MD3_price = 10_000
         self.MD4_price = 1_000_000
+        self.MCrunch = 0
+        self.MCrunch_cost = 10
 
 
 def format_e(n):
@@ -268,4 +292,7 @@ def num_notation(num):
 
 
 if __name__ == "__main__":
-    g = Game(saving=True)
+    try:
+        g = Game(saving=True)
+    finally:
+        g.save()
