@@ -1,4 +1,5 @@
 import json
+import math
 import tkinter.filedialog as fd
 import tkinter.messagebox as mb
 from tkinter import *
@@ -85,13 +86,16 @@ class Game:
                               text=f"Купить 4-е измерение!\nЦена: {int(self.MD1_price)} м.", height=2)
         self.max_btn = Button(self.btn_grid, command=self.max,
                               text="Купить всё", height=2, width=20)
+        self.max2_btn = Button(self.btn_grid, command=self.max2,
+                               text="Купить всё 2.0", height=2, width=20)
         self.crunch_btn = Button(self.btn_grid, command=self.crunch,
                                  text="Сжатие измерений", height=2, width=20)
+        self.singularity_pb = ttk.Progressbar(self.MD_tab, mode="determinate")
+        self.to_singularity_txt = Label(self.MD_tab, text="Прогресс до сингулярности:", font=self.font,
+                                        background="green3")
 
-        self.d_grid.pack(anchor="n", fill='both', padx=10, pady=10)
-        self.btn_grid.pack(anchor="n", fill='both', padx=10, pady=10)
-        self.max_btn.grid(row=0, column=0, padx=5, pady=5)
-        self.crunch_btn.grid(row=0, column=3, padx=160, pady=5)
+        # Упаковка
+        self.d_grid.pack(anchor="n", padx=10, pady=10)
         self.md1_txt.grid(row=0, column=0, padx=5, pady=5, columnspan=2, sticky="ew")
         self.md1_btn.grid(row=0, column=2, padx=5, pady=5)
         self.md2_txt.grid(row=1, column=0, padx=5, pady=5, columnspan=2)
@@ -100,6 +104,14 @@ class Game:
         self.md3_btn.grid(row=2, column=2, padx=5, pady=5)
         self.md4_txt.grid(row=3, column=0, padx=5, pady=5, columnspan=2)
         self.md4_btn.grid(row=3, column=2, padx=5, pady=5)
+
+        self.btn_grid.pack(anchor="n", padx=10, pady=10)
+        self.max_btn.grid(row=0, column=0, padx=5, pady=5)
+        self.max2_btn.grid(row=1, column=0, padx=5, pady=5)
+        self.crunch_btn.grid(row=0, column=3, padx=[160, 5])
+        self.to_singularity_txt.pack(anchor="nw", fill='x', padx=10, pady=10)
+        self.singularity_pb.pack(anchor="nw", fill='x', padx=10)
+
         self.window.after(0, self.main_loop)
         self.window.mainloop()
 
@@ -109,7 +121,6 @@ class Game:
             self.MD1_bought += 1
             self.Matter -= self.MD1_price
             self.MD1_price *= 1.1
-            self.MD1_mult = int(self.MD1_bought / 10) + 1
 
     def md2_btn_click(self):
         if self.Matter >= self.MD2_price:
@@ -117,7 +128,6 @@ class Game:
             self.MD2_bought += 1
             self.Matter -= self.MD2_price
             self.MD2_price *= 1.1
-            self.MD2_mult = int(self.MD2_bought / 10) + 1
 
     def md3_btn_click(self):
         if self.Matter >= self.MD3_price:
@@ -125,7 +135,6 @@ class Game:
             self.MD3_bought += 1
             self.Matter -= self.MD3_price
             self.MD3_price *= 1.1
-            self.MD3_mult = int(self.MD3_bought / 10) + 1
 
     def md4_btn_click(self):
         if self.Matter >= self.MD4_price:
@@ -133,7 +142,6 @@ class Game:
             self.MD4_bought += 1
             self.Matter -= self.MD4_price
             self.MD4_price *= 1.1
-            self.MD4_mult = int(self.MD4_bought / 10) + 1
 
     def max(self):
         while self.Matter >= self.MD1_price:
@@ -144,6 +152,16 @@ class Game:
             self.md3_btn_click()
         while self.Matter >= self.MD4_price:
             self.md4_btn_click()
+
+    def max2(self):
+        while self.Matter >= self.MD4_price:
+            self.md4_btn_click()
+        while self.Matter >= self.MD3_price:
+            self.md3_btn_click()
+        while self.Matter >= self.MD2_price:
+            self.md2_btn_click()
+        while self.Matter >= self.MD1_price:
+            self.md1_btn_click()
 
     def crunch(self):
         if self.MD4 >= int(round(self.MCrunch_cost)):
@@ -173,36 +191,46 @@ class Game:
         self.window.after(self.refresh_speed, self.main_loop)
 
     def UI_refresh(self):
-        self.md1_btn["state"] = "disabled" if self.MD1_price > self.Matter else "active"
-        self.md2_btn["state"] = "disabled" if self.MD2_price > self.Matter else "active"
-        self.md3_btn["state"] = "disabled" if self.MD3_price > self.Matter else "active"
-        self.md4_btn["state"] = "disabled" if self.MD4_price > self.Matter else "active"
-        self.crunch_btn["state"] = "disabled" if int(round(self.MCrunch_cost)) > self.MD4 else "active"
+        current_tab = self.tab_control.tab(self.tab_control.select(), "text")
         self.m_txt["text"] = f"У Вас: {num_notation(round(self.Matter, 1))} ед. Материи"
-        self.md1_txt["text"] = f"1-е Измерение Материи: {num_notation(int(self.MD1))}" \
-                               f"\nМножитель: x{num_notation(self.MD1_mult * (2 ** self.MCrunch))}"
-        self.md2_txt["text"] = f"2-е Измерение Материи: {num_notation(int(self.MD2))}" \
-                               f"\nМножитель: x{num_notation(self.MD2_mult * (2 ** self.MCrunch))}"
-        self.md3_txt["text"] = f"3-е Измерение Материи: {num_notation(int(self.MD3))}" \
-                               f"\nМножитель: x{num_notation(self.MD3_mult * (2 ** self.MCrunch))}"
-        self.md4_txt["text"] = f"4-е Измерение Материи: {num_notation(int(self.MD4))}" \
-                               f"\nМножитель: x{num_notation(self.MD4_mult * (2 ** self.MCrunch))}"
-        self.md1_btn["text"] = f"Купить 1-е измерение!\nЦена: {num_notation(int(self.MD1_price))} м."
-        self.md2_btn["text"] = f"Купить 2-е измерение!\nЦена: {num_notation(int(self.MD2_price))} м."
-        self.md3_btn["text"] = f"Купить 3-е измерение!\nЦена: {num_notation(int(self.MD3_price))} м."
-        self.md4_btn["text"] = f"Купить 4-е измерение!\nЦена: {num_notation(int(self.MD4_price))} м."
-        self.MD1_count["text"] = f"Куплено 1-х измерений: {self.MD1_bought}"
-        self.MD2_count["text"] = f"Куплено 2-х измерений: {self.MD2_bought}"
-        self.MD3_count["text"] = f"Куплено 3-х измерений: {self.MD3_bought}"
-        self.MD4_count["text"] = f"Куплено 4-х измерений: {self.MD4_bought}"
-        self.crunch_btn["text"] = f"Сжатие измерений: {self.MCrunch}" \
-                                  f"\nЦена: {num_notation(int(round(self.MCrunch_cost)))} 4-х ИМ"
+        if current_tab == "Измерения Материи":
+            self.md1_btn["state"] = "disabled" if self.MD1_price > self.Matter else "active"
+            self.md2_btn["state"] = "disabled" if self.MD2_price > self.Matter else "active"
+            self.md3_btn["state"] = "disabled" if self.MD3_price > self.Matter else "active"
+            self.md4_btn["state"] = "disabled" if self.MD4_price > self.Matter else "active"
+            self.crunch_btn["state"] = "disabled" if int(round(self.MCrunch_cost)) > self.MD4 else "active"
+            self.md1_txt["text"] = f"1-е Измерение Материи: {num_notation(int(self.MD1))}" \
+                                   f"\nМножитель: x{num_notation(self.MD1_mult)}"
+            self.md2_txt["text"] = f"2-е Измерение Материи: {num_notation(int(self.MD2))}" \
+                                   f"\nМножитель: x{num_notation(self.MD2_mult)}"
+            self.md3_txt["text"] = f"3-е Измерение Материи: {num_notation(int(self.MD3))}" \
+                                   f"\nМножитель: x{num_notation(self.MD3_mult)}"
+            self.md4_txt["text"] = f"4-е Измерение Материи: {num_notation(int(self.MD4))}" \
+                                   f"\nМножитель: x{num_notation(self.MD4_mult)}"
+            self.md1_btn["text"] = f"Купить 1-е измерение!\nЦена: {num_notation(int(self.MD1_price))} м."
+            self.md2_btn["text"] = f"Купить 2-е измерение!\nЦена: {num_notation(int(self.MD2_price))} м."
+            self.md3_btn["text"] = f"Купить 3-е измерение!\nЦена: {num_notation(int(self.MD3_price))} м."
+            self.md4_btn["text"] = f"Купить 4-е измерение!\nЦена: {num_notation(int(self.MD4_price))} м."
+            self.crunch_btn["text"] = f"Сжатие измерений: {self.MCrunch}" \
+                                      f"\nЦена: {num_notation(int(round(self.MCrunch_cost)))} 4-х ИМ"
+            temp = min(math.log(max(self.Matter, 1), 10), 100)
+            self.singularity_pb['value'] = temp
+            self.to_singularity_txt["text"] = f"Прогресс до сингулярности: {round(temp, 1)}%"
+        elif current_tab == 'Статистика':
+            self.MD1_count["text"] = f"Куплено 1-х измерений: {self.MD1_bought}"
+            self.MD2_count["text"] = f"Куплено 2-х измерений: {self.MD2_bought}"
+            self.MD3_count["text"] = f"Куплено 3-х измерений: {self.MD3_bought}"
+            self.MD4_count["text"] = f"Куплено 4-х измерений: {self.MD4_bought}"
 
     def calculations(self):
         self.Matter += (self.MD1 * self.MD1_mult * (2 ** self.MCrunch)) / self.speed
         self.MD1 += (self.MD2 * self.MD2_mult * (2 ** self.MCrunch)) / self.speed
         self.MD2 += (self.MD3 * self.MD3_mult * (2 ** self.MCrunch)) / self.speed
         self.MD3 += (self.MD4 * self.MD4_mult * (2 ** self.MCrunch)) / self.speed
+        self.MD1_mult = ((self.MD1_bought // 10) + 1) * (2 ** self.MCrunch)
+        self.MD2_mult = ((self.MD2_bought // 10) + 1) * (2 ** self.MCrunch)
+        self.MD3_mult = ((self.MD3_bought // 10) + 1) * (2 ** self.MCrunch)
+        self.MD4_mult = ((self.MD4_bought // 10) + 1) * (2 ** self.MCrunch)
 
     def save(self):
         save = {"Matter": self.Matter, "MD1": self.MD1, "MD2": self.MD2, "MD3": self.MD3, "MD4": self.MD4,
