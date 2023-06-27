@@ -2,9 +2,10 @@ import json
 import math
 import threading
 import time
+from decimal import Decimal
+
 import tkinter.filedialog as fd
 import tkinter.messagebox as mb
-from decimal import Decimal
 from tkinter import *
 from tkinter import Menu
 from tkinter import ttk
@@ -111,12 +112,23 @@ class Game:
                         font=self.font, state="disabled", width=40, anchor="w")]
         for i in range(len(self.auto)):
             self.auto[i].grid(row=i, column=0)
-        self.u_galaxy = Button(self.auto_tab, height=2, width=49, bg="green3", fg="gray99", state="disabled",
-                               command=self.galaxy,
-                               text="Сломанная галактика (+25% к силе производства)\nЦена: 22+ сжатия измерения")
-        self.u_galaxy.pack(anchor="n", pady=10)
+        self.u1_btn = Button(self.auto_tab, height=2, width=49, bg="green3", fg="gray99", state="disabled",
+                             command=self.u1,
+                             text="Сломанная галактика (+25% к силе производства)\nЦена: 22+ сжатия измерения")
+        self.u1_btn.pack(anchor="n", pady=[10, 0])
         if self.upgrades["galaxy"] == 1.25:
-            self.u_galaxy["text"] = "Сломанная галактика (+25% к силе множителя тиков)"
+            self.u1_btn["text"] = "Сломанная галактика (+25% к силе множителя тиков)"
+        self.u2_btn = Button(self.auto_tab, height=2, width=49, bg="green3", fg="gray99", state="disabled",
+                             command=self.u2, text="Когерентная Сингулярность (x1 Энергии Сингулярности)"
+                                                   "\nЦена: 10 Уровней Сингулярности")
+        self.u2_btn.pack(anchor="n", pady=[10, 0])
+        self.u3_btn = Button(self.auto_tab, height=2, width=49, bg="green3", fg="gray99", state="disabled",
+                             command=self.u3,
+                             text="Пространственный Множитель (Количество ИМ ^ 0.1)"
+                                  "\nЦена: 25 Уровней Сингулярности")
+        self.u3_btn.pack(anchor="n", pady=[10, 0])
+        if self.upgrades["MD_mult"] == 0.1:
+            self.u3_btn["text"] = "Пространственный Множитель (Количество ИМ ^ 0.1)"
         # Статистика
         self.Matter_all_stat = Label(self.stat_tab, width=10, height=2, background="light blue1", font=self.font)
         self.MD1_count = Label(self.stat_tab, font=self.font)
@@ -261,7 +273,7 @@ class Game:
             self.tick_speed += 1
             self.tick_speed_price *= 10
 
-    def galaxy(self):
+    def u1(self):
         self.upgrades["galaxy"] = 1.25
         self.MCrunch = 0
         self.MCrunch_cost = Decimal(10)
@@ -284,7 +296,28 @@ class Game:
         self.MD4_price = Decimal(1_000_000)
         self.tick_speed_price = Decimal(1000)
         self.tick_speed = 0
-        self.u_galaxy["text"] = "Сломанная галактика (+25% к силе множителя тиков)"
+        self.u1_btn["text"] = "Сломанная галактика (+25% к силе множителя тиков)"
+
+    def u2(self):
+        self.upgrades["singularity"] = 1.1
+        self.s_xp = 0.0
+        self.s_xp_cost = 10
+        self.s_b1_cost = 100
+        self.s_b2_cost = 100
+        self.s_level_b1 = 0
+        self.s_level_b2 = 0
+        self.s_level = 0
+
+    def u3(self):
+        self.upgrades["MD_mult"] = 0.1
+        self.s_xp = 0.0
+        self.s_xp_cost = 10
+        self.s_b1_cost = 100
+        self.s_b2_cost = 100
+        self.s_level_b1 = 0
+        self.s_level_b2 = 0
+        self.s_level = 0
+        self.u3_btn["text"] = "Пространственный Множитель (Количество ИМ ^ 0.1)"
 
     def s_levelup(self):
         if self.s_xp >= self.s_xp_cost:
@@ -388,17 +421,30 @@ class Game:
             self.MD3_count["text"] = f"Куплено 3-х измерений: {self.MD3_bought}"
             self.MD4_count["text"] = f"Куплено 4-х измерений: {self.MD4_bought}"
         elif current_tab == 'Автоматика':
-            self.u_galaxy["state"] = "disabled" if self.upgrades["galaxy"] == 1.25 or self.MCrunch < 22 else "active"
+            self.u1_btn["state"] = "disabled" if self.upgrades["galaxy"] == 1.25 or self.MCrunch < 22 else "active"
+            self.u2_btn["state"] = "disabled" if self.upgrades["singularity"] == 1.1 or self.s_level < 10 else "active"
+            self.u3_btn["state"] = "disabled" if self.upgrades["MD_mult"] == 0.1 or self.s_level < 25 else "active"
+            self.u1_btn["bg"] = "gray99" if self.upgrades["galaxy"] != 1.25 and self.MCrunch < 22 else "green3"
+            self.u2_btn["bg"] = "gray99" if self.upgrades["singularity"] != 1.1 and self.s_level < 10 else "green3"
+            self.u3_btn["bg"] = "gray99" if self.upgrades["MD_mult"] != 0.1 and self.s_level < 25 else "green3"
+
+            self.u2_btn["text"] = f"Когерентная Сингулярность (x" \
+                                  f"{max(round(self.s_level ** self.upgrades['singularity']),1)} Энергии Сингулярности)"
+            if self.upgrades['singularity'] == 0:
+                self.u2_btn["text"] += "\nЦена: 10 Уровней Сингулярности"
         elif current_tab == 'Сингулярность':
             self.s_level_btn["state"] = "disabled" if self.s_xp_cost > self.s_xp else "active"
             self.s_button1["state"] = "disabled" if self.s_b1_cost > self.s_xp else "active"
             self.s_button2["state"] = "disabled" if self.s_b2_cost > self.s_xp else "active"
             temp = min(round((self.s_xp / self.s_xp_cost) * 100, 1), 100)
-            self.singularity_txt["text"] = f"Создано {num_notation(round(self.s_energy, 1))} ед. энергии Сингулярности."
+            self.singularity_txt["text"] = f"Создано {num_notation(round(self.s_energy, 1))} ед. энергии " \
+                                           f"Сингулярности.\nВсего Опыта Сингулярности: " \
+                                           f"{num_notation(int(self.s_xp))} " \
+                                           f"({num_notation(round(self.delta_s_xp, 2))} О.С./сек.)"
             self.s_info["text"] = f"Показатели Сингулярности:\nУровень сингулярности: {self.s_level}\n" \
-                                  f"Опыт Синг.: {num_notation(int(self.s_xp))}" \
+                                  f"Опыт Синг.: {num_notation(int(min(self.s_xp, self.s_xp_cost)))}" \
                                   f" из {num_notation(int(self.s_xp_cost))} ({temp}%)\n" \
-                                  f"Бонус к Измерениям Материи:\n {num_notation(self.t_sing_mult)}" \
+                                  f"Бонус к Измерениям Материи:\n x{num_notation(self.t_sing_mult)}" \
                                   f" производительности измерений\nx{(self.s_level + 1)} множителя сжатия."
             self.s_level_btn["text"] = f"Повысить уровень Сингулярности до {self.s_level + 1}!"
             self.s_button1["text"] = f"Сингулярное ускорение\n" \
@@ -417,7 +463,8 @@ class Game:
             # Временные множители
             self.t_sing_mult = 3 ** self.s_level
             self.t_crunch_mult = Decimal((2 * (self.s_level + 1)) ** self.MCrunch)
-            self.t_tick_mult = Decimal((self.upgrades["galaxy"] * 1.125) ** self.tick_speed)
+            self.t_tick_mult = Decimal((self.upgrades["galaxy"] * 1.125)) ** self.tick_speed
+            self.delta_s_xp = (1.3 ** self.s_level_b1) * (1.5 ** self.s_level_b2) * self.s_energy
             # Основные вычисления
             temp = self.MD1 * self.MD1_mult * self.t_crunch_mult / self.speed * self.t_tick_mult * self.t_sing_mult
             self.Matter += temp
@@ -425,14 +472,15 @@ class Game:
             self.MD1 += (self.MD2 * self.MD2_mult) / self.speed * self.t_tick_mult * self.t_sing_mult
             self.MD2 += (self.MD3 * self.MD3_mult) / self.speed * self.t_tick_mult * self.t_sing_mult
             self.MD3 += (self.MD4 * self.MD4_mult) / self.speed * self.t_tick_mult * self.t_sing_mult
-            self.MD1_mult = ((self.MD1_bought // 10) + 1) * self.t_crunch_mult
-            self.MD2_mult = ((self.MD2_bought // 10) + 1) * self.t_crunch_mult
-            self.MD3_mult = ((self.MD3_bought // 10) + 1) * self.t_crunch_mult
-            self.MD4_mult = ((self.MD4_bought // 10) + 1) * self.t_crunch_mult
-            self.s_energy = float(Decimal.logb(self.Matter) / 100)
-            if self.alive:
-                if self.s_xp <= self.s_xp_cost and self.s_energy > 1 and self.tab_control.tab(1)["state"] == "normal":
-                    self.s_xp += self.s_energy / self.speed * (1.3 ** self.s_level_b1) * (1.5 ** self.s_level_b2)
+            temp = Decimal(self.upgrades["MD_mult"])
+            self.MD1_mult = ((self.MD1_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD1, 1) ** temp)
+            self.MD2_mult = ((self.MD2_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD2, 1) ** temp)
+            self.MD3_mult = ((self.MD3_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD3, 1) ** temp)
+            self.MD4_mult = ((self.MD4_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD4, 1) ** temp)
+            self.s_energy = float(self.Matter.logb() / 100) * (max(self.s_level ** self.upgrades["singularity"], 1))
+            # if self.alive:
+            #     if self.s_xp <= self.s_xp_cost and self.s_energy > 1 and self.tab_control.tab(1)["state"] == "normal":
+            self.s_xp += self.delta_s_xp / self.speed
 
     def save(self):
         save = {"Matter": str(self.Matter), "Matter_all": str(self.Matter_all), "MD1": str(self.MD1),
@@ -523,7 +571,6 @@ class Game:
         self.tick_speed_price = Decimal(1000.0)
         self.tick_speed = 0
         self.s_energy = 0
-        self.s_energy = 0
         self.s_xp = 0.0
         self.s_xp_cost = 10
         self.s_b1_cost = 100
@@ -531,7 +578,7 @@ class Game:
         self.s_level_b1 = 0
         self.s_level_b2 = 0
         self.s_level = 0
-        self.upgrades = {"galaxy": 1}
+        self.upgrades = {"galaxy": 1, "singularity": 0, "MD_mult": 0}
         # Временные множители
         self.t_tick_mult = (self.upgrades["galaxy"] * 1.125) ** self.tick_speed
 
