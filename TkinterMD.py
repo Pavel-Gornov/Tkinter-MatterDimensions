@@ -10,9 +10,12 @@ from tkinter import *
 from tkinter import Menu
 from tkinter import ttk
 from tkinter.ttk import Style
+from typing import final
+
+VERSION: final = "1.7.2"
 
 
-# noinspection PyAttributeOutsideInit
+# noinspection PyAttributeOutsideInit,PyUnusedLocal
 
 
 class Game:
@@ -192,53 +195,77 @@ class Game:
         self.window.bind(sequence="3", func=self.md3_btn_click)
         self.window.bind(sequence="4", func=self.md4_btn_click)
 
-    def md1_btn_click(self):
+    def md1_btn_click(self, *args):
         if self.Matter >= self.MD1_price:
             self.MD1 += 1
             self.MD1_bought += 1
             self.Matter -= self.MD1_price
             self.MD1_price *= Decimal(1.1)
 
-    def md2_btn_click(self):
+    def md2_btn_click(self, *args):
         if self.Matter >= self.MD2_price:
             self.MD2 += 1
             self.MD2_bought += 1
             self.Matter -= self.MD2_price
             self.MD2_price *= Decimal(1.1)
 
-    def md3_btn_click(self):
+    def md3_btn_click(self, *args):
         if self.Matter >= self.MD3_price:
             self.MD3 += 1
             self.MD3_bought += 1
             self.Matter -= self.MD3_price
             self.MD3_price *= Decimal(1.1)
 
-    def md4_btn_click(self):
+    def md4_btn_click(self, *args):
         if self.Matter >= self.MD4_price:
             self.MD4 += 1
             self.MD4_bought += 1
             self.Matter -= self.MD4_price
             self.MD4_price *= Decimal(1.1)
 
-    def max(self):
-        while self.Matter >= self.MD1_price:
-            self.md1_btn_click()
-        while self.Matter >= self.MD2_price:
-            self.md2_btn_click()
-        while self.Matter >= self.MD3_price:
-            self.md3_btn_click()
-        while self.Matter >= self.MD4_price:
-            self.md4_btn_click()
+    def max(self, *args):
+        n = (int(log(x=((self.Matter * Decimal(0.1)) / self.MD1_price + 1), base=Decimal(1.1))))
+        self.Matter -= self.MD1_price * (Decimal(1.1) ** n - 1) / Decimal(0.1)
+        self.MD1_bought += n
+        self.MD1 += n
+        self.MD1_price *= Decimal(1.1) ** n
+        n = (int(log(x=((self.Matter * Decimal(0.1)) / self.MD2_price + 1), base=Decimal(1.1))))
+        self.Matter -= self.MD2_price * (Decimal(1.1) ** n - 1) / Decimal(0.1)
+        self.MD2_bought += n
+        self.MD2 += n
+        self.MD2_price *= Decimal(1.1) ** n
+        n = (int(log(x=((self.Matter * Decimal(0.1)) / self.MD3_price + 1), base=Decimal(1.1))))
+        self.Matter -= self.MD3_price * (Decimal(1.1) ** n - 1) / Decimal(0.1)
+        self.MD3_bought += n
+        self.MD3 += n
+        self.MD3_price *= Decimal(1.1) ** n
+        n = (int(log(x=((self.Matter * Decimal(0.1)) / self.MD4_price + 1), base=Decimal(1.1))))
+        self.Matter -= self.MD4_price * (Decimal(1.1) ** n - 1) / Decimal(0.1)
+        self.MD4_bought += n
+        self.MD4 += n
+        self.MD4_price *= Decimal(1.1) ** n
 
-    def max2(self):
-        while self.Matter >= self.MD4_price:
-            self.md4_btn_click()
-        while self.Matter >= self.MD3_price:
-            self.md3_btn_click()
-        while self.Matter >= self.MD2_price:
-            self.md2_btn_click()
-        while self.Matter >= self.MD1_price:
-            self.md1_btn_click()
+    def max2(self, *args):
+        n = (int(log(x=((self.Matter * Decimal(0.1)) / self.MD4_price + 1), base=Decimal(1.1))))
+        self.Matter -= self.MD4_price * (Decimal(1.1) ** n - 1) / Decimal(0.1)
+        self.MD4_bought += n
+        self.MD4 += n
+        self.MD4_price *= Decimal(1.1) ** n
+        n = (int(log(x=((self.Matter * Decimal(0.1)) / self.MD3_price + 1), base=Decimal(1.1))))
+        self.Matter -= self.MD3_price * (Decimal(1.1) ** n - 1) / Decimal(0.1)
+        self.MD3_bought += n
+        self.MD3 += n
+        self.MD3_price *= Decimal(1.1) ** n
+        n = (int(log(x=((self.Matter * Decimal(0.1)) / self.MD2_price + 1), base=Decimal(1.1))))
+        self.Matter -= self.MD2_price * (Decimal(1.1) ** n - 1) / Decimal(0.1)
+        self.MD2_bought += n
+        self.MD2 += n
+        self.MD2_price *= Decimal(1.1) ** n
+        n = (int(log(x=((self.Matter * Decimal(0.1)) / self.MD1_price + 1), base=Decimal(1.1))))
+        self.Matter -= self.MD1_price * (Decimal(1.1) ** n - 1) / Decimal(0.1)
+        self.MD1_bought += n
+        self.MD1 += n
+        self.MD1_price *= Decimal(1.1) ** n
 
     def crunch(self):
         if self.MD4 >= int(round(self.MCrunch_cost)):
@@ -264,7 +291,7 @@ class Game:
             self.tick_speed_price = Decimal(1000)
             self.tick_speed = 0
 
-    def tick_upgrade(self):
+    def tick_upgrade(self, *args):
         if self.Matter > self.tick_speed_price:
             self.tick_speed += 1
             self.tick_speed_price *= 10
@@ -509,8 +536,11 @@ class Game:
                 print(e)
 
     def load_save_from_file(self, filename):
-        with open(filename, mode="r") as f:
-            self.load_values(json.load(f))
+        try:
+            with open(filename, mode="r") as f:
+                self.load_values(json.load(f))
+        except Exception as e:
+            print(e)
 
     def load_values(self, data):
         self.Matter = Decimal(data["Matter"])
@@ -589,6 +619,10 @@ def decode_BooleanVar(var: BooleanVar) -> bool:
 
 def load_BoolVar(var: bool) -> BooleanVar:
     return BooleanVar(value=var)
+
+
+def log(x: Decimal, base) -> float:
+    return float(Decimal.log10(x) * 1 / Decimal.log10(Decimal(base)))
 
 
 def format_e(n):
