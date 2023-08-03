@@ -16,35 +16,35 @@ from tkinter.ttk import Style
 
 
 class Game:
-    def __init__(self, font="Calibri", refresh_speed=33, saving=False):
+    def __init__(self, font="Calibri", refresh_speed=33, saving=False, save_file_name="save.json"):
         self.font = font
         self.refresh_speed = refresh_speed
         self.window = Tk()
         self.new_game()
         self.speed = int(1000 / self.refresh_speed)
-        self.decode_BoolVar = lambda x: x.get()
-        self.load_BoolVar = lambda x: BooleanVar(value=x)
-        if saving:
-            try:
-                with open("save.json", mode="r") as f:
-                    data = json.load(f)
-                    self.load(data)
-            except Exception as e:
-                print(e)
+        self.load_save_from_file(save_file_name)
         self.alive = True
         self.start()
-        self.initUI()
+        self.init_ui()
+        # Запуск цикла
+        self.tab_control.focus_set()
+        self.window.after(0, self.main_loop)
+        self.window.mainloop()
+        # Окно закрылось
+        if saving:
+            self.save(save_file_name)
+        self.alive = False
 
     def start(self):
         self.calc_thread = threading.Thread(target=self.calculations)
         self.calc_thread.start()
 
-    def initUI(self):
+    def init_ui(self):
         # Стили
-        s = Style()
-        s.theme_use("default")
-        s.configure("g1.Vertical.TProgressbar", troughcolor='gray', background='green3', thickness=50)
-        s.configure("g0.Vertical.TProgressbar", troughcolor='gray', background='green4', thickness=20)
+        self.style = Style(self.window)
+        self.style.theme_use("default")
+        self.style.configure("g1.Vertical.TProgressbar", troughcolor='gray', background='green3', thickness=50)
+        self.style.configure("g0.Vertical.TProgressbar", troughcolor='gray', background='green4', thickness=20)
         # Инициализация Интерфейса
         self.window.title("Измерения Материи")
         self.window.geometry("500x500")
@@ -52,7 +52,7 @@ class Game:
         self.menu = Menu(self.window)
         self.file_menu = Menu(self.menu, tearoff=0)
         self.file_menu.add_command(label='Сохранить', command=self.save)
-        self.file_menu.add_command(label='Загрузить', command=self.load_save_from_file)
+        self.file_menu.add_command(label='Загрузить', command=self.get_save_file_name_and_load_from_it)
         self.menu.add_cascade(label='Файл', menu=self.file_menu)
         self.window.config(menu=self.menu)
         # Показатель материи
@@ -72,22 +72,22 @@ class Game:
         # Сингулярность
         self.singularity_txt = Label(self.singularity_tab, background="green3", height=2, font=self.font)
         self.s_grid = ttk.Frame(master=self.singularity_tab)
-        self.singularity_xp_pb = ttk.Progressbar(self.s_grid, mode="determinate", orient="vertical", lengt=350,
+        self.singularity_xp_pb = ttk.Progressbar(self.s_grid, mode="determinate", orient="vertical",
                                                  style="g1.Vertical.TProgressbar", value=30)
         self.s_info = Label(self.s_grid, background="lime green", height=7, font=self.font, width=40)
         self.s_button1 = Button(self.s_grid, height=3, width=20, command=self.s_button1_click)
         self.s_button2 = Button(self.s_grid, height=3, width=20, command=self.s_button2_click)
         self.s_level_btn = Button(self.s_grid, height=3, width=45, command=self.s_levelup)
         self.s_button1_p = ttk.Progressbar(self.s_grid, mode="determinate", orient="horizontal",
-                                           style="g0.Vertical.TProgressbar", lengt=150)
+                                           style="g0.Vertical.TProgressbar")
         self.s_button2_p = ttk.Progressbar(self.s_grid, mode="determinate", orient="horizontal",
-                                           style="g0.Vertical.TProgressbar", lengt=150)
+                                           style="g0.Vertical.TProgressbar")
         self.singularity_txt.pack(anchor="n", fill=X)
-        self.s_grid.pack(anchor="n", pady=[20, 0])
+        self.s_grid.pack(anchor="n", pady=(20, 0))
         self.singularity_xp_pb.grid(row=0, column=0, rowspan=5, padx=20)
         self.s_info.grid(row=0, column=1, rowspan=2, columnspan=3)
         self.s_button1.grid(row=3, column=1, sticky="w", padx=5)
-        self.s_button2.grid(row=3, column=3, padx=[20, 0])
+        self.s_button2.grid(row=3, column=3, padx=(20, 0))
         self.s_button1_p.grid(row=4, column=1, sticky="wn", padx=5)
         self.s_button2_p.grid(row=4, column=3, sticky="en")
         self.s_level_btn.grid(row=2, column=1, columnspan=3)
@@ -115,18 +115,18 @@ class Game:
         self.u1_btn = Button(self.auto_tab, height=2, width=49, bg="green3", fg="gray99", state="disabled",
                              command=self.u1,
                              text="Сломанная галактика (+25% к силе производства)\nЦена: 22+ сжатия измерения")
-        self.u1_btn.pack(anchor="n", pady=[10, 0])
+        self.u1_btn.pack(anchor="n", pady=(10, 0))
         if self.upgrades["galaxy"] == 1.25:
             self.u1_btn["text"] = "Сломанная галактика (+25% к силе множителя тиков)"
         self.u2_btn = Button(self.auto_tab, height=2, width=49, bg="green3", fg="gray99", state="disabled",
                              command=self.u2, text="Когерентная Сингулярность (x1 Энергии Сингулярности)"
                                                    "\nЦена: 10 Уровней Сингулярности")
-        self.u2_btn.pack(anchor="n", pady=[10, 0])
+        self.u2_btn.pack(anchor="n", pady=(10, 0))
         self.u3_btn = Button(self.auto_tab, height=2, width=49, bg="green3", fg="gray99", state="disabled",
                              command=self.u3,
                              text="Пространственный Множитель (Количество ИМ ^ 0.1)"
                                   "\nЦена: 25 Уровней Сингулярности")
-        self.u3_btn.pack(anchor="n", pady=[10, 0])
+        self.u3_btn.pack(anchor="n", pady=(10, 0))
         if self.upgrades["MD_mult"] == 0.1:
             self.u3_btn["text"] = "Пространственный Множитель (Количество ИМ ^ 0.1)"
         # Статистика
@@ -178,8 +178,8 @@ class Game:
         self.btn_grid.pack(anchor="n", padx=10)
         self.max_btn.grid(row=0, column=0, padx=5, pady=5)
         self.max2_btn.grid(row=1, column=0, padx=5, pady=5)
-        self.crunch_btn.grid(row=0, column=3, padx=[160, 5])
-        self.tick_btn.grid(row=1, column=3, padx=[160, 5])
+        self.crunch_btn.grid(row=0, column=3, padx=(160, 5))
+        self.tick_btn.grid(row=1, column=3, padx=(160, 5))
         self.to_singularity_txt.pack(anchor="nw", fill='x', padx=10, pady=10)
         self.singularity_pb.pack(anchor="nw", fill='x', padx=10)
         # Привязка клавиш
@@ -191,40 +191,36 @@ class Game:
         self.window.bind(sequence="2", func=self.md2_btn_click)
         self.window.bind(sequence="3", func=self.md3_btn_click)
         self.window.bind(sequence="4", func=self.md4_btn_click)
-        # Запуск цикла
-        self.tab_control.focus_set()
-        self.window.after(0, self.main_loop)
-        self.window.mainloop()
 
-    def md1_btn_click(self, event=None):
+    def md1_btn_click(self):
         if self.Matter >= self.MD1_price:
             self.MD1 += 1
             self.MD1_bought += 1
             self.Matter -= self.MD1_price
             self.MD1_price *= Decimal(1.1)
 
-    def md2_btn_click(self, event=None):
+    def md2_btn_click(self):
         if self.Matter >= self.MD2_price:
             self.MD2 += 1
             self.MD2_bought += 1
             self.Matter -= self.MD2_price
             self.MD2_price *= Decimal(1.1)
 
-    def md3_btn_click(self, event=None):
+    def md3_btn_click(self):
         if self.Matter >= self.MD3_price:
             self.MD3 += 1
             self.MD3_bought += 1
             self.Matter -= self.MD3_price
             self.MD3_price *= Decimal(1.1)
 
-    def md4_btn_click(self, event=None):
+    def md4_btn_click(self):
         if self.Matter >= self.MD4_price:
             self.MD4 += 1
             self.MD4_bought += 1
             self.Matter -= self.MD4_price
             self.MD4_price *= Decimal(1.1)
 
-    def max(self, event=None):
+    def max(self):
         while self.Matter >= self.MD1_price:
             self.md1_btn_click()
         while self.Matter >= self.MD2_price:
@@ -234,7 +230,7 @@ class Game:
         while self.Matter >= self.MD4_price:
             self.md4_btn_click()
 
-    def max2(self, event=None):
+    def max2(self):
         while self.Matter >= self.MD4_price:
             self.md4_btn_click()
         while self.Matter >= self.MD3_price:
@@ -244,7 +240,7 @@ class Game:
         while self.Matter >= self.MD1_price:
             self.md1_btn_click()
 
-    def crunch(self, event=None):
+    def crunch(self):
         if self.MD4 >= int(round(self.MCrunch_cost)):
             self.MCrunch += 1
             self.MCrunch_cost *= Decimal(1.25)
@@ -268,7 +264,7 @@ class Game:
             self.tick_speed_price = Decimal(1000)
             self.tick_speed = 0
 
-    def tick_upgrade(self, event=None):
+    def tick_upgrade(self):
         if self.Matter > self.tick_speed_price:
             self.tick_speed += 1
             self.tick_speed_price *= 10
@@ -338,13 +334,13 @@ class Game:
             self.s_b2_cost *= 3.75
 
     def main_loop(self):
-        self.UI_refresh()
+        self.ui_refresh()
         self.unlocks()
         self.auto_buyers()
         self.window.after(self.refresh_speed, self.main_loop)
 
     def auto_buyers(self):
-        data = list(map(self.decode_BoolVar, self.auto_state))
+        data = list(map(decode_BooleanVar, self.auto_state))
         if data[0]:
             self.md1_btn_click()
         if data[1]:
@@ -382,7 +378,7 @@ class Game:
         if self.Matter >= float("1e100") and self.tab_control.tab(1)["state"] != "normal":
             self.tab_control.tab(1, state="normal")
 
-    def UI_refresh(self):
+    def ui_refresh(self):
         current_tab = self.tab_control.tab(self.tab_control.select(), "text")
         self.m_txt["text"] = f"У Вас: {num_notation(round(self.Matter))} ед. Материи"
         if current_tab == "Измерения Материи":
@@ -411,7 +407,7 @@ class Game:
             self.crunch_btn["text"] = f"Сжатие измерений: {self.MCrunch}" \
                                       f"\nЦена: {num_notation(int(round(self.MCrunch_cost)))} 4-х ИМ"
             self.tick_btn["text"] = f"Ускорение Материи\nЦена: {num_notation(self.tick_speed_price)} м."
-            temp = min(math.log(max(self.Matter, 1), 10), 100)
+            temp = min(math.log(max(self.Matter, Decimal(1)), 10), 100)
             self.singularity_pb['value'] = temp
             self.to_singularity_txt["text"] = f"Прогресс до сингулярности: {round(temp, 1)}%"
         elif current_tab == 'Статистика':
@@ -429,7 +425,8 @@ class Game:
             self.u3_btn["bg"] = "gray99" if self.upgrades["MD_mult"] != 0.1 and self.s_level < 25 else "green3"
 
             self.u2_btn["text"] = f"Когерентная Сингулярность (x" \
-                                  f"{max(round(self.s_level ** self.upgrades['singularity']),1)} Энергии Сингулярности)"
+                                  f"{max(round(self.s_level ** self.upgrades['singularity']), 1)} " \
+                                  f"Энергии Сингулярности)"
             if self.upgrades['singularity'] == 0:
                 self.u2_btn["text"] += "\nЦена: 10 Уровней Сингулярности"
         elif current_tab == 'Сингулярность':
@@ -473,16 +470,16 @@ class Game:
             self.MD2 += (self.MD3 * self.MD3_mult) / self.speed * self.t_tick_mult * self.t_sing_mult
             self.MD3 += (self.MD4 * self.MD4_mult) / self.speed * self.t_tick_mult * self.t_sing_mult
             temp = Decimal(self.upgrades["MD_mult"])
-            self.MD1_mult = ((self.MD1_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD1, 1) ** temp)
-            self.MD2_mult = ((self.MD2_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD2, 1) ** temp)
-            self.MD3_mult = ((self.MD3_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD3, 1) ** temp)
-            self.MD4_mult = ((self.MD4_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD4, 1) ** temp)
+            self.MD1_mult = ((self.MD1_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD1, Decimal(1)) ** temp)
+            self.MD2_mult = ((self.MD2_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD2, Decimal(1)) ** temp)
+            self.MD3_mult = ((self.MD3_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD3, Decimal(1)) ** temp)
+            self.MD4_mult = ((self.MD4_bought // 10) + 1) * self.t_crunch_mult * (max(self.MD4, Decimal(1)) ** temp)
             self.s_energy = float(self.Matter.logb() / 100) * (max(self.s_level ** self.upgrades["singularity"], 1))
             # if self.alive:
             #     if self.s_xp <= self.s_xp_cost and self.s_energy > 1 and self.tab_control.tab(1)["state"] == "normal":
             self.s_xp += self.delta_s_xp / self.speed
 
-    def save(self):
+    def save(self, save_file_name):
         save = {"Matter": str(self.Matter), "Matter_all": str(self.Matter_all), "MD1": str(self.MD1),
                 "MD2": str(self.MD2), "MD3": str(self.MD3),
                 "MD4": str(self.MD4), "MD1_bought": self.MD1_bought, "MD2_bought": self.MD2_bought,
@@ -490,29 +487,32 @@ class Game:
                 "MD2_mult": str(self.MD2_mult), "MD3_mult": str(self.MD3_mult), "MD4_mult": str(self.MD4_mult),
                 "MD1_price": str(self.MD1_price), "MD2_price": str(self.MD2_price), "MD3_price": str(self.MD3_price),
                 "MD4_price": str(self.MD4_price), "MCrunch": self.MCrunch, "MCrunch_cost": str(self.MCrunch_cost),
-                "auto_state": list(map(self.decode_BoolVar, self.auto_state)),
+                "auto_state": list(map(decode_BooleanVar, self.auto_state)),
                 "tick_speed_price": str(self.tick_speed_price), "tick_speed": self.tick_speed,
                 "s_energy": self.s_energy, "s_xp": self.s_xp, "s_xp_cost": self.s_xp_cost, "s_b1_cost": self.s_b1_cost,
                 "s_b2_cost": self.s_b2_cost, "s_level_b1": self.s_level_b1, "s_level_b2": self.s_level_b2,
                 "s_level": self.s_level, "upgrades": self.upgrades}
-        with open("save.json", mode="w") as f:
+        with open(save_file_name, mode="w") as f:
             f.write(json.dumps(save, indent=2))
 
-    def load_save_from_file(self):
+    def get_save_file_name_and_load_from_it(self):
         filetypes = (("Файл json", "*.json"),
                      ("Любой", "*"))
         filename = fd.askopenfilename(title="Открыть файл", initialdir="/",
                                       filetypes=filetypes)
         if filename:
-            with open(filename, mode="r") as f:
-                try:
-                    self.load(json.load(f))
-                    mb.showinfo("Успешно", "Сохранение загружено успешно!")
-                except Exception as e:
-                    mb.showerror("Ошибка", "Произошла ошибка при загрузке файла!")
-                    print(e)
+            try:
+                self.load_save_from_file(filename)
+                mb.showinfo("Успешно", "Сохранение загружено успешно!")
+            except Exception as e:
+                mb.showerror("Ошибка", "Произошла ошибка при загрузке файла!")
+                print(e)
 
-    def load(self, data):
+    def load_save_from_file(self, filename):
+        with open(filename, mode="r") as f:
+            self.load_values(json.load(f))
+
+    def load_values(self, data):
         self.Matter = Decimal(data["Matter"])
         self.Matter_all = Decimal(data["Matter_all"])
         self.MD1 = Decimal(data["MD1"])
@@ -533,7 +533,7 @@ class Game:
         self.MD4_price = Decimal(data["MD4_price"])
         self.MCrunch = data["MCrunch"]
         self.MCrunch_cost = Decimal(data["MCrunch_cost"])
-        self.auto_state = list(map(self.load_BoolVar, data["auto_state"]))
+        self.auto_state = list(map(load_BoolVar, data["auto_state"]))
         self.tick_speed_price = Decimal(data["tick_speed_price"])
         self.tick_speed = data["tick_speed"]
         self.s_energy = data["s_energy"]
@@ -583,6 +583,14 @@ class Game:
         self.t_tick_mult = (self.upgrades["galaxy"] * 1.125) ** self.tick_speed
 
 
+def decode_BooleanVar(var: BooleanVar) -> bool:
+    return var.get()
+
+
+def load_BoolVar(var: bool) -> BooleanVar:
+    return BooleanVar(value=var)
+
+
 def format_e(n):
     return f"{n:.2E}".lower().replace("+", "")
 
@@ -603,8 +611,4 @@ def num_notation(num):
 
 
 if __name__ == "__main__":
-    try:
-        g = Game(saving=True)
-    finally:
-        g.alive = False
-        g.save()
+    g = Game(saving=True)
