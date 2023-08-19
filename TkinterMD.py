@@ -20,6 +20,7 @@ VERSION: final = "1.7.2"
 
 class Game:
     def __init__(self, font="Calibri", refresh_speed=33, saving=False, save_file_name="save.json"):
+        self.save_file_name = save_file_name
         self.font = font
         self.refresh_speed = refresh_speed
         self.window = Tk()
@@ -35,7 +36,7 @@ class Game:
         self.window.mainloop()
         # Окно закрылось
         if saving:
-            self.save(save_file_name)
+            self.save()
         self.alive = False
 
     def start(self):
@@ -76,15 +77,15 @@ class Game:
         self.singularity_txt = Label(self.singularity_tab, background="green3", height=2, font=self.font)
         self.s_grid = ttk.Frame(master=self.singularity_tab)
         self.singularity_xp_pb = ttk.Progressbar(self.s_grid, mode="determinate", orient="vertical",
-                                                 style="g1.Vertical.TProgressbar", value=30)
+                                                 style="g1.Vertical.TProgressbar", value=30, lengt=350)
         self.s_info = Label(self.s_grid, background="lime green", height=7, font=self.font, width=40)
         self.s_button1 = Button(self.s_grid, height=3, width=20, command=self.s_button1_click)
         self.s_button2 = Button(self.s_grid, height=3, width=20, command=self.s_button2_click)
         self.s_level_btn = Button(self.s_grid, height=3, width=45, command=self.s_levelup)
         self.s_button1_p = ttk.Progressbar(self.s_grid, mode="determinate", orient="horizontal",
-                                           style="g0.Vertical.TProgressbar")
+                                           style="g0.Vertical.TProgressbar", lengt=150)
         self.s_button2_p = ttk.Progressbar(self.s_grid, mode="determinate", orient="horizontal",
-                                           style="g0.Vertical.TProgressbar")
+                                           style="g0.Vertical.TProgressbar", lengt=150)
         self.singularity_txt.pack(anchor="n", fill=X)
         self.s_grid.pack(anchor="n", pady=(20, 0))
         self.singularity_xp_pb.grid(row=0, column=0, rowspan=5, padx=20)
@@ -225,6 +226,8 @@ class Game:
 
     def max(self, *args):
         n = (int(log(x=((self.Matter * Decimal(0.1)) / self.MD1_price + 1), base=Decimal(1.1))))
+        if self.Matter == self.MD1_price:
+            n = 1
         self.Matter -= self.MD1_price * (Decimal(1.1) ** n - 1) / Decimal(0.1)
         self.MD1_bought += n
         self.MD1 += n
@@ -262,6 +265,8 @@ class Game:
         self.MD2 += n
         self.MD2_price *= Decimal(1.1) ** n
         n = (int(log(x=((self.Matter * Decimal(0.1)) / self.MD1_price + 1), base=Decimal(1.1))))
+        if self.Matter == self.MD1_price:
+            n = 1
         self.Matter -= self.MD1_price * (Decimal(1.1) ** n - 1) / Decimal(0.1)
         self.MD1_bought += n
         self.MD1 += n
@@ -506,7 +511,7 @@ class Game:
             #     if self.s_xp <= self.s_xp_cost and self.s_energy > 1 and self.tab_control.tab(1)["state"] == "normal":
             self.s_xp += self.delta_s_xp / self.speed
 
-    def save(self, save_file_name):
+    def save(self):
         save = {"Matter": str(self.Matter), "Matter_all": str(self.Matter_all), "MD1": str(self.MD1),
                 "MD2": str(self.MD2), "MD3": str(self.MD3),
                 "MD4": str(self.MD4), "MD1_bought": self.MD1_bought, "MD2_bought": self.MD2_bought,
@@ -519,7 +524,7 @@ class Game:
                 "s_energy": self.s_energy, "s_xp": self.s_xp, "s_xp_cost": self.s_xp_cost, "s_b1_cost": self.s_b1_cost,
                 "s_b2_cost": self.s_b2_cost, "s_level_b1": self.s_level_b1, "s_level_b2": self.s_level_b2,
                 "s_level": self.s_level, "upgrades": self.upgrades}
-        with open(save_file_name, mode="w") as f:
+        with open(self.save_file_name, mode="w") as f:
             f.write(json.dumps(save, indent=2))
 
     def get_save_file_name_and_load_from_it(self):
